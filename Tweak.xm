@@ -5,7 +5,6 @@
 #import <iOS7/SpringBoard/SBSearchField.h>*/
 #import <substrate.h>
 
-
 %group iOS6
 %hook SBSearchController
 
@@ -22,8 +21,8 @@
 
 
 %group iOS7
-
 %hook SBSearchViewController
+
 - (void)_searchFieldReturnPressed
 {
     %orig;
@@ -36,6 +35,7 @@
 
 %group iOS9
 %hook SPUISearchViewController
+
 - (void)_searchFieldReturnPressed
 {
     %orig;
@@ -46,8 +46,34 @@
 %end
 %end
 
+%group iOS10
+static UITableViewController * table;
+static UITableView * tableView;
+%hook SPUITableViewController
+- (id)tableView:(id)arg1 cellForRowAtIndexPath:(id)arg2{
+    tableView = arg1;
+    return %orig;
+}
+%end
+%hook SPUISearchHeader
+- (BOOL)textFieldShouldReturn:(id)arg1{
+    [table tableView:tableView didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+    return %orig;
+}
+%end
+%hook SPUISearchViewController
+- (id)activeViewController{
+    table = MSHookIvar<UITableViewController *>(self, "_searchTableViewController");
+    return %orig;
+}
+%end
+%end
+
 %ctor {
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0) {
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0) {
+        %init(iOS10);
+    }
+    else if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0) {
         %init(iOS9);
     }
     else if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0) {
